@@ -6,6 +6,7 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var busboy = require('connect-busboy');
 var bodyParser = require('body-parser');
+var brain = require('brain');
 var _ = require('lodash');
 
 var routes = require('./routes/index');
@@ -45,17 +46,28 @@ app.post('/train', function(req, res) {
     var csvStream = csv.createStream(options);
     file.pipe(csvStream);
     csvStream.on('data', function (row) {
-      rows.push(_.values(row).filter(function(x) { return x !== '';} ));
+      rows.push(_.values(row).filter(function(x) { return x !== '';} ).map(function(x) { return parseFloat(x, 10); }));
     });
 
     csvStream.on('end', function() {
       var maxLength = _.max(_.map(rows, function(row) { return row.length; }));
       var trainingRows = _.filter(rows, function(row) { return row.length === maxLength; });
       var predictionRows = _.filter(rows, function(row) { return row.length < maxLength; });
-      
+      var trainingData = trainingRows.map(function(tr) {
+        var expected = tr.pop();
+        return {input: tr, output: [expected]};
+      });
+
+      var net = new brain.NeuralNetwork();
+
+      net.train(trainingData);
+      var predictions = predictionRows.map(function(metrics) {
+        metrics.push(net.run(metrics));
+        return metrics;
+      });
       res.json({
-        training: trainingRows,
-        predictions: predictionRows
+        training: trainingData,
+        predictions: predictions
       });
     });
   });
