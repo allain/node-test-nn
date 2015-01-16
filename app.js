@@ -29,53 +29,7 @@ app.use(require('less-middleware')(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
-app.use('/users', users);
-
-app.post('/train', function(req, res) {
-  var fstream;
-  req.pipe(req.busboy);
-  req.busboy.on('file', function (fieldname, file, filename) {
-    console.log("Uploading: " + filename); 
-
-    var options = {
-      escapeChar : '"', // default is an empty string
-      enclosedChar : '"' // default is an empty string
-    }
-    
-    var rows = [];
-    var csvStream = csv.createStream(options);
-    file.pipe(csvStream);
-    csvStream.on('data', function (row) {
-      rows.push(_.values(row).filter(function(x) { return x !== '';} ).map(function(x) { return parseFloat(x, 10); }));
-    });
-
-    csvStream.on('end', function() {
-      var maxLength = _.max(_.map(rows, function(row) { return row.length; }));
-      var trainingRows = _.filter(rows, function(row) { return row.length === maxLength; });
-      var predictionRows = _.filter(rows, function(row) { return row.length < maxLength; });
-      var trainingData = trainingRows.map(function(tr) {
-        var expected = tr.pop();
-        return {input: tr, output: [expected]};
-      });
-
-      var net = new brain.NeuralNetwork();
-
-      net.train(trainingData);
-      var predictions = predictionRows.map(function(metrics) {
-        metrics.push(net.run(metrics));
-        return metrics;
-      });
-      res.json({
-        training: trainingData,
-        predictions: predictions
-      });
-    });
-  });
-});
-
-app.get('/train', function(req, res) {
-  res.render('train');
-});
+app.use('/train', require('./routes/training.js'));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -1,0 +1,32 @@
+<table class="table table-bordered">
+<tr>
+<th>Type</th>
+{{#each columns}}
+  <th>{{.}}</th>
+{{/each}}
+</tr>
+{{#each training}}
+  <tr>
+    <td>Training</td>
+    {{#each input}}
+       <td class="input">{{.}}</td>
+    {{/each}}
+    
+    {{#each output}}
+       <td class="output output-correct">{{.}}</td>
+    {{/each}}
+  </tr>
+{{/each}}
+{{#each predictions}}
+  <tr>
+    <td>Prediction</td>
+    {{#each input}}
+       <td class="input">{{.}}</td>
+    {{/each}}
+    
+    {{#each output}}
+       <td class="output output-prediction">{{.}}</td>
+    {{/each}}
+  </tr>
+{{/each}}
+</table>
